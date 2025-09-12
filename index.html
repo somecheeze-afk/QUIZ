@@ -330,7 +330,8 @@
       judgeText.style.color = 'var(--ng)';
       audio.wrong();
       // 正解表示
-      buttons.find(b => b.textContent === answer)?.classList.add('correct');
+      const ansBtn = buttons.find(b => b.textContent === answer);
+      if (ansBtn) ansBtn.classList.add('correct');
     }
 
     nextBtn.disabled = false;

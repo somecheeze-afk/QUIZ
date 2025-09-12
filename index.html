@@ -146,7 +146,7 @@
   </div>
 
   <script>
-  // ====== 問題データ ======
+  // ====== 問題データ（追記歓迎） ======
   const questionBank = [
     { q: 'ライス量100g（お子様）の場合、ソース量とお玉は？',
       choices: ['154g／1強','176g／2杯','88g／1杯','120g／1.5杯'],
@@ -179,27 +179,27 @@
       choices: ['528g／6杯','650g／7強','572g／6.5杯','484g／5.5杯'],
       answer: '572g／6.5杯' },
     { q: 'ライス量1000gの場合、ソース量とお玉は？',
-      choices: ['572g／6.5杯','730g／8強','606g／7強','650g／7強'],
-      answer: '650g／7強' },
+      choices: ['572g／6.5杯','730g／8強','（ソース量空欄）／7強','650g／7強'],
+      answer: '（ソース量空欄）／7強' },
     { q: 'ライス量1100gの場合、ソース量とお玉は？',
       choices: ['572g／6.5杯','650g／7強','730g／8強','600g／6.5杯'],
       answer: '650g／7強' },
     { q: 'ライス量1200gの場合、ソース量とお玉は？',
-      choices: ['650g／7強','572g／6.5杯','694g／7強','730g／8強'],
-      answer: '650g／7強' },
+      choices: ['650g／7強','572g／6.5杯','（ソース量空欄）／7強','730g／8強'],
+      answer: '（ソース量空欄）／7強' },
     { q: 'ライス量1300gの場合、ソース量とお玉は？',
-      choices: ['650g／7強','730g／7強','694g／7強','572g／6.5杯'],
-      answer: '730g／7強' },
+      choices: ['650g／7強','730g／8強','（ソース量空欄）／7強','572g／6.5杯'],
+      answer: '（ソース量空欄）／7強' },
     { q: 'ライス量1400gの場合、ソース量とお玉は？',
       choices: ['650g／7強','572g／6.5杯','730g／8強','800g／8杯'],
       answer: '730g／8強' },
     { q: 'ライス量1500gの場合、ソース量とお玉は？',
-      choices: ['730g／8強','800g／8杯','650g／7強','745g／8強'],
-      answer: '730g／8強' },
+      choices: ['730g／8強','800g／8杯','650g／7強','（ソース量空欄）／8強'],
+      answer: '（ソース量空欄）／8強' },
   ];
 
   // ====== Utility ======
-  const $  = sel => document.querySelector(sel);
+  const $ = sel => document.querySelector(sel);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
   const shuffle = arr => arr.map(v => [Math.random(), v]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]);
 
@@ -222,31 +222,30 @@
   };
 
   // ====== State ======
-  let picked = [];   // 出題セット
+  let picked = [];   // 出題セット（オブジェクト配列）
   let idx = 0;       // 現在の問題インデックス
   let correct = 0;   // 正解数
 
   // ====== Elements ======
-  const splash   = $('#splash');
-  const home     = $('#home');
-  const quiz     = $('#quiz');
-  const result   = $('#result');
-  const qCount   = $('#qCount');
+  const splash = $('#splash');
+  const home = $('#home');
+  const quiz = $('#quiz');
+  const result = $('#result');
+  const qCount = $('#qCount');
   const bankSize = $('#bankSize');
   const startBtn = $('#startBtn');
-  const howBtn   = $('#howBtn');
-  const qIndex   = $('#qIndex');
-  const qTotal   = $('#qTotal');
-  const qTitle   = $('#qTitle');
+  const howBtn = $('#howBtn');
+  const qIndex = $('#qIndex');
+  const qTotal = $('#qTotal');
+  const qTitle = $('#qTitle');
   const choiceWrap = $('#choiceWrap');
-  const nextBtn  = $('#nextBtn');
-  const judgeText= $('#judgeText');
-  const bar      = $('#bar');
-  const scoreText= $('#scoreText');
+  const nextBtn = $('#nextBtn');
+  const judgeText = $('#judgeText');
+  const bar = $('#bar');
+  const scoreText = $('#scoreText');
   const scoreMsg = $('#scoreMsg');
   const retryBtn = $('#retryBtn');
-  const homeBtn  = $('#homeBtn');
-  const qCorrectEl = $('#qCorrect'); // 追加：正解数表示
+  const homeBtn = $('#homeBtn');
 
   // 初期化
   bankSize.textContent = `全 ${questionBank.length} 問`;
@@ -274,10 +273,10 @@
   homeBtn.addEventListener('click', () => show(home));
 
   function begin(n){
+    // 出題セット作成：問題順もランダム、必要数だけ抽出
     picked = shuffle(questionBank).slice(0, n).map(q => ({...q}));
     idx = 0; correct = 0;
     qTotal.textContent = picked.length;
-    qCorrectEl.textContent = '0';
     nextBtn.disabled = true;
     judgeText.textContent = '';
     show(quiz);
@@ -322,7 +321,6 @@
     if(isCorrect){
       btn.classList.add('correct');
       correct++;
-      qCorrectEl.textContent = String(correct); // 追加：正解数表示を更新
       judgeText.textContent = '正解！';
       judgeText.style.color = 'var(--ok)';
       audio.correct();
@@ -332,8 +330,7 @@
       judgeText.style.color = 'var(--ng)';
       audio.wrong();
       // 正解表示
-      const ansBtn = buttons.find(b => b.textContent === answer);
-      if (ansBtn) ansBtn.classList.add('correct');
+      buttons.find(b => b.textContent === answer)?.classList.add('correct');
     }
 
     nextBtn.disabled = false;

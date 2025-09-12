@@ -3,364 +3,174 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ココイチクイズ｜業務知識4択</title>
-  <meta name="description" content="ココイチクイズ（業務用）：ライス量→ソース量・お玉の対応を覚える4択クイズ。GitHub Pages で配布可能な単一HTML。" />
+  <title>ココイチクイズ（最小版・v20250913c）</title>
+  <meta name="description" content="GitHub Pagesで配布できる単一HTML版ココイチクイズ。ライス量に対するソース量・お玉の本数を覚える4択問題。" />
+  <meta name="x-deploy" content="v-20250913c" />
+  <!-- kill switch (念のためのSW/Cache掃除。無害・不要なら削除可) -->
+  <script>
+  (function killOldSW(){
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+    }
+    if (window.caches) {
+      caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+    }
+    console.log('DEBUG HTML loaded: v-20250913c', location.href);
+  })();
+  </script>
   <style>
-    :root{
-      --bg: #0f172a;        /* slate-900 */
-      --panel: #111827;     /* gray-900 */
-      --panel-2:#1f2937;    /* gray-800 */
-      --text:#e5e7eb;       /* gray-200 */
-      --accent:#f59e0b;     /* amber-500 */
-      --ok:#22c55e;         /* green-500 */
-      --ng:#ef4444;         /* red-500 */
-      --muted:#9ca3af;      /* gray-400 */
-    }
-    html,body{height:100%;}
-    body{
-      margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif;
-      color:var(--text); background:linear-gradient(180deg, #0b1025 0%, #0f172a 100%);
-    }
-    .container{ max-width: 860px; margin: 0 auto; padding: 24px; }
-    .card{ background:linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%); border:1px solid rgba(255,255,255,.06); border-radius:16px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,.3); }
-    h1,h2{ margin:0 0 12px; letter-spacing: .02em; }
-    h1{ font-size: clamp(28px, 4vw, 40px); }
-    h2{ font-size: clamp(20px, 2.6vw, 28px); color:#eab308; }
-    p{ line-height:1.7; color:#d1d5db; }
-    .muted{ color:var(--muted); }
-    button{ appearance:none; border:none; cursor:pointer; }
-
-    /* Splash */
-    #splash{ position:fixed; inset:0; display:grid; place-items:center; background: radial-gradient(1200px 800px at 50% 0%, #1f2937 0%, #0f172a 60%); z-index:100; overflow:hidden; }
-    .splash-inner{ text-align:center; }
-    .logo{ font-weight:800; font-size: clamp(36px, 6vw, 64px); display:flex; gap:.3em; align-items:center; justify-content:center; }
-    .logo span{ display:inline-block; }
-    .emoji{ font-size: 1em; filter: drop-shadow(0 8px 20px rgba(0,0,0,.6)); animation: bob 1.8s ease-in-out infinite; }
-    .brand{ background: linear-gradient(90deg,#fde68a,#f59e0b,#f97316); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color: transparent; }
-    @keyframes bob { 0%,100%{ transform: translateY(0) rotate(0deg); } 50%{ transform: translateY(-8px) rotate(4deg);} }
-    .fadeOut{ animation: fadeOut .7s ease forwards; }
-    @keyframes fadeOut{ to{ opacity:0; visibility:hidden; } }
-
-    /* Home */
-    #home, #quiz, #result { display:none; }
-    .show{ display:block; }
-    .row{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-    .grow{ flex:1 1 auto; }
-    .controls{ margin-top: 14px; display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
-    .btn{ padding:12px 16px; background: #374151; color:#fff; border-radius:12px; font-weight:600; transition: transform .05s ease, background .2s ease; }
-    .btn:hover{ background:#4b5563; }
-    .btn:active{ transform: translateY(1px); }
-    .btn-primary{ background: linear-gradient(90deg, #f59e0b, #f97316); color:#111; }
-    .btn-primary:hover{ filter: brightness(1.06); }
-
-    .input{ padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.1); background:#0b1020; color:#fff; min-width: 120px; }
-    .small{ font-size: 12px; }
-
-    /* Quiz */
-    .q-meta{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:8px; }
-    .progress{ height:10px; border-radius:999px; background:#111827; border:1px solid rgba(255,255,255,.06); overflow:hidden; }
-    .bar{ height:100%; width:0%; background: linear-gradient(90deg, #22c55e, #f59e0b); transition: width .25s ease; }
-
-    .q-text{ font-size: clamp(18px, 2.5vw, 22px); margin: 10px 0 12px; }
-    .choices{ display:grid; grid-template-columns: 1fr; gap:10px; }
-    .choice{ width:100%; text-align:left; padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,.08); background:#0b1222; color:#e5e7eb; font-size:16px; }
-    .choice:hover{ background:#0f1630; }
-    .choice.correct{ border-color: rgba(34,197,94,.9); box-shadow: 0 0 0 2px rgba(34,197,94,.25) inset; }
-    .choice.wrong{ border-color: rgba(239,68,68,.9); box-shadow: 0 0 0 2px rgba(239,68,68,.25) inset; }
-    .choice[disabled]{ opacity:.7; cursor:not-allowed; }
-
-    .footer{ margin-top:12px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
-
-    /* Result */
-    .score{ font-size: clamp(24px, 4vw, 36px); font-weight:800; }
-    .pill{ padding:6px 10px; border-radius:999px; background:#111827; border:1px solid rgba(255,255,255,.08); }
-
-    /* Tips */
-    details{ border:1px dashed rgba(255,255,255,.15); border-radius:12px; padding:12px; }
-    summary{ cursor:pointer; color:#fbbf24; font-weight:700; }
-    code{ background:#0b1020; padding:.2em .4em; border-radius:.4em; border:1px solid rgba(255,255,255,.1); }
-
-    /* Responsive */
-    @media (min-width: 720px){
-      .choices{ grid-template-columns: 1fr 1fr; }
-    }
+    :root{--bg:#0f172a;--panel:#111827;--panel2:#1f2937;--text:#e5e7eb;--muted:#9ca3af;--ok:#22c55e;--ng:#ef4444;--accent:#f59e0b}
+    html,body{height:100%}
+    body{margin:0;background:linear-gradient(180deg,#0b1025,#0f172a);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic UI",Meiryo,sans-serif}
+    .wrap{max-width:860px;margin:0 auto;padding:24px}
+    .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+    h1{margin:0 0 8px;font-size:clamp(22px,4vw,32px)}
+    h2{margin:0 0 8px;font-size:clamp(20px,3vw,26px);color:#eab308}
+    .muted{color:var(--muted)}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:10px 0}
+    .pill{padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:#0b1020;font-size:12px}
+    .btn{appearance:none;border:none;cursor:pointer;padding:12px 16px;border-radius:12px;background:#374151;color:#fff;font-weight:700}
+    .btn.primary{background:linear-gradient(90deg,#f59e0b,#f97316);color:#111}
+    #home,#quiz,#result{display:none}.show{display:block}
+    .choices{display:grid;gap:10px}
+    .choice{padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:#0b1222;color:#e5e7eb;text-align:left}
+    .choice[disabled]{opacity:.7;cursor:not-allowed}
+    .correct{box-shadow:0 0 0 2px rgba(34,197,94,.25) inset;border-color:rgba(34,197,94,.9)}
+    .wrong{box-shadow:0 0 0 2px rgba(239,68,68,.25) inset;border-color:rgba(239,68,68,.9)}
+    .progress{height:10px;border-radius:999px;background:#111827;border:1px solid rgba(255,255,255,.06);overflow:hidden;margin:8px 0}
+    .bar{height:100%;width:0;background:linear-gradient(90deg,#22c55e,#f59e0b)}
+    .foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:10px}
+    input[type=number]{padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:#0b1020;color:#fff}
+    @media(min-width:720px){.choices{grid-template-columns:1fr 1fr}}
   </style>
 </head>
 <body>
-  <!-- Splash / Intro -->
-  <div id="splash">
-    <div class="splash-inner">
-      <div class="logo" aria-label="ココイチクイズ">
-        <span class="brand">ココイチクイズ</span>
-        <span class="emoji" aria-hidden="true">🍛</span>
-      </div>
-      <p class="muted">業務知識をゲーム感覚で覚えよう</p>
-    </div>
-  </div>
-
-  <div class="container">
-    <!-- Home (Start) -->
+  <div class="wrap">
+    <!-- HOME -->
     <section id="home" class="card show" aria-labelledby="homeTitle">
       <h1 id="homeTitle">業務知識クイズ（ライス量 → ソース量／お玉）</h1>
-      <p>トップページで出題数を選び、「スタート」で開始します。選択肢は毎回シャッフルされます。</p>
+      <p class="muted">最小構成：スプラッシュ無し・相対パス無し・単一HTML。<br>
+        <b>表示バージョン:</b> <span id="ver">v20250913c</span> ／
+        <b>現在のパス:</b> <span id="path"></span>
+      </p>
       <div class="row">
         <label for="qCount" class="muted">出題数</label>
-        <input id="qCount" class="input" type="number" min="1" value="16" />
-        <span class="pill small" id="bankSize"></span>
+        <input id="qCount" type="number" min="1" value="16" />
+        <span class="pill" id="bankSize"></span>
       </div>
-      <div class="controls">
-        <button id="startBtn" class="btn btn-primary">スタート</button>
+      <div class="row">
+        <button id="startBtn" class="btn primary">スタート</button>
         <button id="howBtn" class="btn">？ 遊び方</button>
       </div>
-      <details style="margin-top:14px;">
-        <summary>出題内容を追加・編集したい（管理者向け）</summary>
-        <p class="small">このHTMLの <code>questionBank</code> 配列に問題を追記するだけでOK。<br>形式：<code>{ q: "問題文", choices: ["A","B","C","D"], answer: "正解の文字列" }</code></p>
-      </details>
     </section>
 
-    <!-- Quiz -->
+    <!-- QUIZ -->
     <section id="quiz" class="card" aria-live="polite">
-      <div class="q-meta">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
         <div><span id="qIndex">1</span>/<span id="qTotal">1</span></div>
         <div class="pill">正解：<span id="qCorrect">0</span></div>
       </div>
-      <div class="progress" aria-hidden="true"><div id="bar" class="bar"></div></div>
-      <h2 id="qTitle" class="q-text">問題文</h2>
+      <div class="progress"><div id="bar" class="bar"></div></div>
+      <h2 id="qTitle">問題文</h2>
       <div id="choiceWrap" class="choices" role="group" aria-label="選択肢"></div>
-      <div class="footer">
+      <div class="foot">
         <button id="nextBtn" class="btn" disabled>次へ ▶</button>
         <span id="judgeText" class="muted"></span>
       </div>
     </section>
 
-    <!-- Result -->
+    <!-- RESULT -->
     <section id="result" class="card" aria-labelledby="resTitle">
       <h2 id="resTitle">結果</h2>
-      <p class="score"><span id="scoreText">0/0</span></p>
+      <p style="font-size:clamp(24px,4vw,36px);font-weight:800"><span id="scoreText">0/0</span></p>
       <p id="scoreMsg" class="muted"></p>
-      <div class="controls">
-        <button id="retryBtn" class="btn btn-primary">もう一度</button>
+      <div class="row">
+        <button id="retryBtn" class="btn primary">もう一度</button>
         <button id="homeBtn" class="btn">トップへ</button>
       </div>
     </section>
   </div>
 
   <script>
-  // ====== 問題データ（追記歓迎） ======
+  // 画面ヘルプ
+  document.getElementById('path').textContent = location.pathname + location.search;
+
+  // 問題データ
   const questionBank = [
-    { q: 'ライス量100g（お子様）の場合、ソース量とお玉は？',
-      choices: ['154g／1強','176g／2杯','88g／1杯','120g／1.5杯'],
-      answer: '88g／1杯' },
-    { q: 'ライス量150g（ハーフ）の場合、ソース量とお玉は？',
-      choices: ['176g／2杯','140g／1杯','154g／1強','220g／2.5杯'],
-      answer: '154g／1強' },
-    { q: 'ライス量200gの場合、ソース量とお玉は？',
-      choices: ['176g／2杯','154g／1強','220g／2.5杯','200g／2.5杯'],
-      answer: '176g／2杯' },
-    { q: 'ライス量250〜300gの場合、ソース量とお玉は？',
-      choices: ['200g／2杯','290g／3強','220g／2.5杯','176g／2杯'],
-      answer: '220g／2.5杯' },
-    { q: 'ライス量350〜400gの場合、ソース量とお玉は？',
-      choices: ['220g／2.5杯','290g／3強','360g／4強','440g／5杯'],
-      answer: '290g／3強' },
-    { q: 'ライス量500gの場合、ソース量とお玉は？',
-      choices: ['360g／4強','290g／3強','440g／5杯','484g／5.5杯'],
-      answer: '360g／4強' },
-    { q: 'ライス量600gの場合、ソース量とお玉は？',
-      choices: ['360g／4強','484g／5.5杯','440g／5杯','528g／6杯'],
-      answer: '440g／5杯' },
-    { q: 'ライス量700gの場合、ソース量とお玉は？',
-      choices: ['484g／5.5杯','440g／5杯','528g／6杯','572g／6.5杯'],
-      answer: '484g／5.5杯' },
-    { q: 'ライス量800gの場合、ソース量とお玉は？',
-      choices: ['484g／5.5杯','572g／6.5杯','528g／6杯','600g／6.5杯'],
-      answer: '528g／6杯' },
-    { q: 'ライス量900gの場合、ソース量とお玉は？',
-      choices: ['528g／6杯','650g／7強','572g／6.5杯','484g／5.5杯'],
-      answer: '572g／6.5杯' },
-    { q: 'ライス量1000gの場合、ソース量とお玉は？',
-      choices: ['572g／6.5杯','730g／8強','606g／7強','650g／7強'],
-      answer: '650g／7強' },
-    { q: 'ライス量1100gの場合、ソース量とお玉は？',
-      choices: ['572g／6.5杯','650g／7強','730g／8強','600g／6.5杯'],
-      answer: '650g／7強' },
-    { q: 'ライス量1200gの場合、ソース量とお玉は？',
-      choices: ['650g／7強','572g／6.5杯','694g／7強','730g／8強'],
-      answer: '650g／7強' },
-    { q: 'ライス量1300gの場合、ソース量とお玉は？',
-      choices: ['650g／7強','730g／7強','694g／7強','572g／6.5杯'],
-      answer: '730g／7強' },
-    { q: 'ライス量1400gの場合、ソース量とお玉は？',
-      choices: ['650g／7強','572g／6.5杯','730g／8強','800g／8杯'],
-      answer: '730g／8強' },
-    { q: 'ライス量1500gの場合、ソース量とお玉は？',
-      choices: ['730g／8強','800g／8杯','650g／7強','745g／8強'],
-      answer: '730g／8強' },
+    { q:'ライス量100g（お子様）の場合、ソース量とお玉は？', choices:['154g／1強','176g／2杯','88g／1杯','120g／1.5杯'], answer:'88g／1杯' },
+    { q:'ライス量150g（ハーフ）の場合、ソース量とお玉は？', choices:['176g／2杯','140g／1杯','154g／1強','220g／2.5杯'], answer:'154g／1強' },
+    { q:'ライス量200gの場合、ソース量とお玉は？', choices:['176g／2杯','154g／1強','220g／2.5杯','200g／2.5杯'], answer:'176g／2杯' },
+    { q:'ライス量250〜300gの場合、ソース量とお玉は？', choices:['200g／2杯','290g／3強','220g／2.5杯','176g／2杯'], answer:'220g／2.5杯' },
+    { q:'ライス量350〜400gの場合、ソース量とお玉は？', choices:['220g／2.5杯','290g／3強','360g／4強','440g／5杯'], answer:'290g／3強' },
+    { q:'ライス量500gの場合、ソース量とお玉は？', choices:['360g／4強','290g／3強','440g／5杯','484g／5.5杯'], answer:'360g／4強' },
+    { q:'ライス量600gの場合、ソース量とお玉は？', choices:['360g／4強','484g／5.5杯','440g／5杯','528g／6杯'], answer:'440g／5杯' },
+    { q:'ライス量700gの場合、ソース量とお玉は？', choices:['484g／5.5杯','440g／5杯','528g／6杯','572g／6.5杯'], answer:'484g／5.5杯' },
+    { q:'ライス量800gの場合、ソース量とお玉は？', choices:['484g／5.5杯','572g／6.5杯','528g／6杯','600g／6.5杯'], answer:'528g／6杯' },
+    { q:'ライス量900gの場合、ソース量とお玉は？', choices:['528g／6杯','650g／7強','572g／6.5杯','484g／5.5杯'], answer:'572g／6.5杯' },
+    { q:'ライス量1000gの場合、ソース量とお玉は？', choices:['572g／6.5杯','730g／8強','606g／7強','650g／7強'], answer:'650g／7強' },
+    { q:'ライス量1100gの場合、ソース量とお玉は？', choices:['572g／6.5杯','650g／7強','730g／8強','600g／6.5杯'], answer:'650g／7強' },
+    { q:'ライス量1200gの場合、ソース量とお玉は？', choices:['650g／7強','572g／6.5杯','694g／7強','730g／8強'], answer:'650g／7強' },
+    { q:'ライス量1300gの場合、ソース量とお玉は？', choices:['650g／7強','730g／7強','694g／7強','572g／6.5杯'], answer:'730g／7強' },
+    { q:'ライス量1400gの場合、ソース量とお玉は？', choices:['650g／7強','572g／6.5杯','730g／8強','800g／8杯'], answer:'730g／8強' },
+    { q:'ライス量1500gの場合、ソース量とお玉は？', choices:['730g／8強','800g／8杯','650g／7強','745g／8強'], answer:'730g／8強' },
   ];
 
-  // ====== Utility ======
-  const $ = sel => document.querySelector(sel);
-  const $$ = sel => Array.from(document.querySelectorAll(sel));
-  const shuffle = arr => arr.map(v => [Math.random(), v]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]);
+  // ユーティリティ
+  const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+  const shuffle=arr=>arr.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]);
 
-  // ====== Simple SFX (WebAudio) ======
-  const audio = {
-    ctx: null,
-    ensure(){ if(!this.ctx){ this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } },
-    beep({freq=880, dur=0.12, type='sine', gain=0.06}={}){
-      this.ensure();
-      const t0 = this.ctx.currentTime;
-      const osc = this.ctx.createOscillator();
-      const g = this.ctx.createGain();
-      osc.type = type; osc.frequency.value = freq;
-      g.gain.value = gain; g.gain.setTargetAtTime(0.0001, t0+dur*0.8, 0.03);
-      osc.connect(g).connect(this.ctx.destination);
-      osc.start(t0); osc.stop(t0+dur);
-    },
-    correct(){ this.beep({freq: 1046, dur:.10, type:'triangle', gain:.06}); setTimeout(()=>this.beep({freq: 1318, dur:.12, type:'triangle', gain:.06}), 90); },
-    wrong(){ this.beep({freq: 196, dur:.14, type:'sawtooth', gain:.06}); setTimeout(()=>this.beep({freq: 174, dur:.16, type:'sawtooth', gain:.05}), 120); }
-  };
+  // 要素
+  const home=$('#home'), quiz=$('#quiz'), result=$('#result');
+  const startBtn=$('#startBtn'), howBtn=$('#howBtn');
+  const qCount=$('#qCount'), bankSize=$('#bankSize');
+  const qIndex=$('#qIndex'), qTotal=$('#qTotal'), qTitle=$('#qTitle'), choiceWrap=$('#choiceWrap');
+  const nextBtn=$('#nextBtn'), judgeText=$('#judgeText'), bar=$('#bar');
+  const scoreText=$('#scoreText'), scoreMsg=$('#scoreMsg'), retryBtn=$('#retryBtn'), homeBtn=$('#homeBtn');
+  const qCorrectEl=$('#qCorrect');
 
-  // ====== State ======
-  let picked = [];   // 出題セット（オブジェクト配列）
-  let idx = 0;       // 現在の問題インデックス
-  let correct = 0;   // 正解数
+  bankSize.textContent=`全 ${questionBank.length} 問`;
+  qCount.max=questionBank.length; qCount.value=questionBank.length;
 
-  // ====== Elements ======
-  const splash = $('#splash');
-  const home = $('#home');
-  const quiz = $('#quiz');
-  const result = $('#result');
-  const qCount = $('#qCount');
-  const bankSize = $('#bankSize');
-  const startBtn = $('#startBtn');
-  const howBtn = $('#howBtn');
-  const qIndex = $('#qIndex');
-  const qTotal = $('#qTotal');
-  const qTitle = $('#qTitle');
-  const choiceWrap = $('#choiceWrap');
-  const nextBtn = $('#nextBtn');
-  const judgeText = $('#judgeText');
-  const bar = $('#bar');
-  const scoreText = $('#scoreText');
-  const scoreMsg = $('#scoreMsg');
-  const retryBtn = $('#retryBtn');
-  const homeBtn = $('#homeBtn');
+  let picked=[], idx=0, correct=0;
 
-  // 初期化
-  bankSize.textContent = `全 ${questionBank.length} 問`;
-  qCount.max = questionBank.length;
-  qCount.value = questionBank.length;
-
-  // スプラッシュを少し表示してからフェード
-  window.addEventListener('load', () => {
-    setTimeout(()=>{
-      splash.classList.add('fadeOut');
-      setTimeout(()=> splash.style.display='none', 700);
-    }, 1000);
-  });
-
-  howBtn.addEventListener('click', ()=>{
-    alert('4択問題です。出題数を選んでスタート。選択肢は毎回シャッフルされます。正解・不正解で音が鳴ります。');
-  });
-
-  startBtn.addEventListener('click', () => {
-    const n = Math.max(1, Math.min(parseInt(qCount.value||'1',10), questionBank.length));
-    begin(n);
-  });
-
-  retryBtn.addEventListener('click', () => begin(picked.length));
-  homeBtn.addEventListener('click', () => show(home));
-
+  function show(sec){ [home,quiz,result].forEach(s=>s.classList.remove('show')); sec.classList.add('show'); }
   function begin(n){
-    // 出題セット作成：問題順もランダム、必要数だけ抽出
-    picked = shuffle(questionBank).slice(0, n).map(q => ({...q}));
-    idx = 0; correct = 0;
-    qTotal.textContent = picked.length;
-    nextBtn.disabled = true;
-    judgeText.textContent = '';
-    show(quiz);
-    render();
+    picked=shuffle(questionBank).slice(0,n).map(q=>({...q}));
+    idx=0; correct=0; qCorrectEl.textContent='0';
+    qTotal.textContent=picked.length; nextBtn.disabled=true; judgeText.textContent='';
+    show(quiz); render();
   }
-
-  function show(section){
-    [home, quiz, result].forEach(s=>s.classList.remove('show'));
-    section.classList.add('show');
-  }
-
   function render(){
-    const cur = picked[idx];
-    qIndex.textContent = (idx+1);
-    qTitle.textContent = cur.q;
-    judgeText.textContent = '';
-    bar.style.width = `${(idx / picked.length) * 100}%`;
-    nextBtn.disabled = true;
-
-    // 選択肢をシャッフル表示
-    choiceWrap.innerHTML = '';
-    const shuffled = shuffle(cur.choices.map((t,i)=>({t, i})));
-
-    shuffled.forEach(({t}) => {
-      const btn = document.createElement('button');
-      btn.className = 'choice';
-      btn.type = 'button';
-      btn.textContent = t;
-      btn.addEventListener('click', () => onPick(btn, t, cur.answer));
-      choiceWrap.appendChild(btn);
+    const cur=picked[idx];
+    qIndex.textContent=idx+1; qTitle.textContent=cur.q; judgeText.textContent='';
+    bar.style.width=`${(idx/picked.length)*100}%`; nextBtn.disabled=true;
+    choiceWrap.innerHTML='';
+    shuffle(cur.choices).forEach(t=>{
+      const b=document.createElement('button'); b.className='choice'; b.textContent=t; b.type='button';
+      b.addEventListener('click',()=>onPick(b,t,cur.answer)); choiceWrap.appendChild(b);
     });
   }
-
   function onPick(btn, pickedText, answer){
-    // 既に判定済みなら無視
-    if(nextBtn.disabled === false) return;
-
-    const buttons = $$('.choice');
-    buttons.forEach(b => b.disabled = true);
-
-    const isCorrect = pickedText === answer;
-    if(isCorrect){
-      btn.classList.add('correct');
-      correct++;
-      judgeText.textContent = '正解！';
-      judgeText.style.color = 'var(--ok)';
-      audio.correct();
-    }else{
-      btn.classList.add('wrong');
-      judgeText.textContent = '不正解…';
-      judgeText.style.color = 'var(--ng)';
-      audio.wrong();
-      // 正解表示
-      const ansBtn = buttons.find(b => b.textContent === answer);
-      if (ansBtn) ansBtn.classList.add('correct');
-    }
-
-    nextBtn.disabled = false;
+    if(nextBtn.disabled===false) return;
+    const buttons=$$('.choice'); buttons.forEach(b=>b.disabled=true);
+    const ok=pickedText===answer;
+    btn.classList.add(ok?'correct':'wrong'); judgeText.textContent= ok?'正解！':'不正解…'; judgeText.style.color= ok?'var(--ok)':'var(--ng)';
+    if(ok){ correct++; qCorrectEl.textContent=String(correct); }
+    const a=buttons.find(b=>b.textContent===answer); if(a) a.classList.add('correct');
+    nextBtn.disabled=false;
   }
-
-  nextBtn.addEventListener('click', () => {
-    idx++;
-    if(idx >= picked.length){
-      finish();
-    }else{
-      render();
-    }
-  });
-
   function finish(){
-    bar.style.width = '100%';
-    scoreText.textContent = `${correct} / ${picked.length}`;
-    const rate = correct / picked.length;
-    scoreMsg.textContent = rate >= .9 ? '完璧！現場マスター！' : rate >= .7 ? 'いい感じ、この調子！' : 'もう一息。復習してもう一度挑戦しよう。';
+    bar.style.width='100%'; scoreText.textContent=`${correct} / ${picked.length}`;
+    const r=correct/picked.length; scoreMsg.textContent= r>=.9?'完璧！現場マスター！': r>=.7?'いい感じ、この調子！':'もう一息。復習してもう一度挑戦しよう。';
     show(result);
   }
 
-  // 数字入力を安全化
-  qCount.addEventListener('input', () => {
-    const v = parseInt(qCount.value||'1',10);
-    if(Number.isNaN(v)) qCount.value = 1;
-    else if(v < 1) qCount.value = 1;
-    else if(v > questionBank.length) qCount.value = questionBank.length;
-  });
+  startBtn.addEventListener('click',()=>begin(Math.max(1,Math.min(parseInt(qCount.value||'1',10),questionBank.length))));
+  retryBtn.addEventListener('click',()=>begin(picked.length));
+  homeBtn.addEventListener('click',()=>show(home));
+  howBtn.addEventListener('click',()=>alert('4択問題です。出題数を選んでスタート。選択肢は毎回シャッフルされます。'));
+  nextBtn.addEventListener('click',()=>{ idx++; if(idx>=picked.length) finish(); else render(); });
+  qCount.addEventListener('input',()=>{ const v=parseInt(qCount.value||'1',10); if(Number.isNaN(v)||v<1) qCount.value=1; else if(v>questionBank.length) qCount.value=questionBank.length; });
   </script>
 </body>
 </html>

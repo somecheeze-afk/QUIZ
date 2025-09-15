@@ -31,8 +31,10 @@ h2{margin:0 0 8px; font-size:clamp(18px,3vw,24px); color:#fedc7d}
   color:#111; font-weight:700; text-decoration:none; cursor:pointer;
   transform: translateY(0); transition: transform .08s ease, box-shadow .2s ease;
   box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  border:none;
 }
 .btn:hover{transform: translateY(-1px)}
+.btn.ghost{background:#0b1222;color:#e5e7eb;border:1px solid rgba(255,255,255,.08)}
 .choice{
   padding:14px 16px;border-radius:14px;background:#0b1222;color:#e5e7eb;
   transition:transform .08s ease, box-shadow .2s ease, background .2s ease;
@@ -66,12 +68,8 @@ h2{margin:0 0 8px; font-size:clamp(18px,3vw,24px); color:#fedc7d}
 /* Timer */
 .timer{height:10px;border-radius:999px;background:#0e1726;border:1px solid rgba(255,255,255,.06);overflow:hidden;margin:10px 0;position:relative}
 .timerbar{height:100%;width:100%;background:linear-gradient(90deg,#16a34a,#fde047);transition:width .1s linear}
-.count{
-  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  font-weight:900; font-size:clamp(26px, 6vw, 42px);
-  text-shadow: 0 6px 22px rgba(0,0,0,.55);
-  color:#fff; letter-spacing:.5px;
-}
+.count{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-weight:900; font-size:clamp(26px, 6vw, 42px); text-shadow: 0 6px 22px rgba(0,0,0,.55); color:#fff}
 @keyframes pulseNum{0%{transform:scale(1)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
 .count.pulse{animation:pulseNum .25s ease}
 .end-actions{margin-top:12px;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
@@ -79,3 +77,6 @@ h2{margin:0 0 8px; font-size:clamp(18px,3vw,24px); color:#fedc7d}
 @keyframes clickPop{0%{transform:scale(1)}60%{transform:scale(1.03); box-shadow:0 10px 30px rgba(0,0,0,.25)}100%{transform:scale(1)}}
 .clicked{animation:clickPop .18s ease}
 .dim{opacity:.55}
+.mode-row{display:flex; gap:10px; margin-top:12px}
+.summary{margin-top:10px}
+.best{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:#0b1222;border:1px solid rgba(255,255,255,.06)}

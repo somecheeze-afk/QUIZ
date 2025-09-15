@@ -12,7 +12,7 @@
   <div class="wrap">
     <section class="card rise">
       <div class="progress"><div id="bar" class="bar"></div></div>
-      <div class="timer">
+      <div id="timerWrap" class="timer">
         <div id="tbar" class="timerbar"></div>
         <div id="tcount" class="count">5</div>
       </div>
@@ -22,6 +22,7 @@
         <a id="back" href="index.html" class="btn" style="display:none">トップに戻る</a>
         <button id="next" class="btn" disabled>次へ ▶</button>
       </div>
+      <div id="summary" class="summary muted"></div>
       <span id="status" class="muted"></span>
     </section>
   </div>
@@ -70,19 +71,41 @@ function fireworks(duration=2500){
   requestAnimationFrame(tick);
 }
 
+// ====== Records (localStorage) ======
+function getKey(id, mode){ return `quizRecords:${id}:${mode}`; }
+function loadRecords(id, mode){
+  try{ return JSON.parse(localStorage.getItem(getKey(id,mode))||"[]"); }catch(e){ return []; }
+}
+function saveRecord(id, mode, rec){
+  const arr = loadRecords(id, mode); arr.push(rec);
+  localStorage.setItem(getKey(id,mode), JSON.stringify(arr));
+}
+function bestTime(id, mode){
+  const arr = loadRecords(id, mode).filter(r => r.correct===r.total && typeof r.time==='number');
+  if(arr.length===0) return null;
+  return Math.min(...arr.map(r=>r.time));
+}
+
 // ====== Quiz ======
 const params=new URLSearchParams(location.search);
 const id=params.get("id"); const count=parseInt(params.get("count")||"0");
-let quiz,index=0,correct=0,selected=[]; let timerId=null; const LIMIT=5; // 秒
+const mode=(params.get("mode")||"challenge"); // default challenge for backward compat
+let quiz,index=0,correct=0,selected=[]; let timerId=null; 
+const LIMIT = (mode==="challenge") ? 5 : Infinity; // seconds
+let qStart=0; const qTimes=[]; // seconds per question
 
 async function loadQuiz(){
   const res=await fetch(`quizzes/${id}.json`,{cache:"no-store"});
   if(!res.ok){ document.getElementById('question').textContent='問題の読み込みに失敗しました'; return; }
   quiz=await res.json();
   selected=quiz.questions.slice().sort(()=>Math.random()-0.5).slice(0,count||quiz.questions.length);
+  if(mode==="normal"){
+    document.getElementById("timerWrap").style.display="none";
+  }
   showQuestion();
 }
 function startTimer(){
+  if(!isFinite(LIMIT)) return; // no timer in normal
   const tbar=document.getElementById('tbar'); const tcount=document.getElementById('tcount');
   let remain=LIMIT, step=100;
   tcount.textContent = Math.ceil(remain);
@@ -113,6 +136,9 @@ function timeUp(){
   const q=selected[index];
   document.querySelectorAll('.choice').forEach(btn=>btn.disabled=true);
   revealCorrect(q);
+  // time for this question = elapsed from qStart to now
+  const elapsed = (performance.now() - qStart)/1000;
+  qTimes.push(Number(elapsed.toFixed(2)));
   document.getElementById('status').textContent='時間切れ… 正解は「'+q.choices[q.answer]+'」';
   sfxWrong();
   document.getElementById('next').disabled=false;
@@ -129,6 +155,9 @@ function showQuestion(){
       stopTimer();
       document.querySelectorAll(".choice").forEach(btn=>btn.disabled=true);
       b.classList.add('clicked');
+      // record time
+      const elapsed = (performance.now() - qStart)/1000;
+      qTimes.push(Number(elapsed.toFixed(2)));
       if(i===q.answer){ correct++; b.classList.add("correct"); document.getElementById("status").textContent="正解！ "+(q.explain||""); sfxCorrect(); }
       else{ b.classList.add("wrong"); document.getElementById("status").textContent="不正解… 正解は「"+q.choices[q.answer]+"」。 "+(q.explain||""); sfxWrong(); revealCorrect(q); }
       document.getElementById("next").disabled=false;
@@ -137,23 +166,48 @@ function showQuestion(){
   });
   document.getElementById("bar").style.width=`${(index/selected.length)*100}%`;
   document.getElementById('next').disabled=true;
+  qStart = performance.now();
   startTimer();
 }
 document.getElementById("next").onclick=()=>{
   index++; 
   if(index<selected.length){ showQuestion(); }
   else{
-    stopTimer();
-    document.getElementById("bar").style.width="100%";
-    const total=selected.length;
-    document.getElementById("question").textContent=`終了！ 正解数：${correct}/${total}`;
-    document.getElementById("choices").innerHTML="";
-    document.getElementById("status").textContent="";
-    document.getElementById("next").style.display="none";
-    document.getElementById("back").style.display="inline-flex";
-    if(correct===total){ fireworks(); }
+    finish();
   }
 };
+function finish(){
+  stopTimer();
+  document.getElementById("bar").style.width="100%";
+  const total=selected.length;
+  const title = (mode==="challenge") ? "（チャレンジ）" : "（ノーマル）";
+  document.getElementById("question").textContent=`終了！ ${title} 正解数：${correct}/${total}`;
+  document.getElementById("choices").innerHTML="";
+  document.getElementById("status").textContent="";
+  document.getElementById("next").style.display="none";
+  document.getElementById("back").style.display="inline-flex";
+
+  let html = "";
+  if(correct===total){
+    const sum = qTimes.reduce((a,b)=>a+b,0);
+    const totalTime = Number(sum.toFixed(2));
+    if(mode==="challenge"){ // 記録はチャレンジのみ保存（要望通り全問正解時）
+      const rec = {
+        quizId: id, mode, date: new Date().toISOString(),
+        correct, total, time: totalTime, perQuestion: qTimes
+      };
+      saveRecord(id, mode, rec);
+    }
+    const best = bestTime(id, mode);
+    html += `全問正解！ 合計タイム：<b>${totalTime}秒</b>`;
+    if(best!=null) html += ` <span class="best">自己ベスト：${best.toFixed(2)}秒</span>`;
+    fireworks();
+  }else{
+    html += `正解数：${correct}/${total}（全問正解でタイム記録）`;
+  }
+  document.getElementById("summary").innerHTML = html;
+}
+
 loadQuiz();
 document.addEventListener("pointerdown",()=>{try{ensureCtx()}catch(e){}},{once:true});
 </script>

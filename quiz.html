@@ -12,7 +12,10 @@
   <div class="wrap">
     <section class="card rise">
       <div class="progress"><div id="bar" class="bar"></div></div>
-      <div class="timer"><div id="tbar" class="timerbar"></div></div>
+      <div class="timer">
+        <div id="tbar" class="timerbar"></div>
+        <div id="tcount" class="count">5</div>
+      </div>
       <h2 id="question"></h2>
       <div id="choices" class="choices"></div>
       <div class="end-actions">
@@ -81,7 +84,9 @@ async function loadQuiz(){
 }
 function startTimer(){
   const tbar=document.getElementById('tbar');
+  const tcount=document.getElementById('tcount');
   let remain=LIMIT, step=100; // ms
+  tcount.textContent = Math.ceil(remain);
   tbar.style.transition='none'; tbar.style.width='100%'; void tbar.offsetWidth; // reset
   tbar.style.transition='width .1s linear';
   clearInterval(timerId);
@@ -89,13 +94,24 @@ function startTimer(){
     remain-=step/1000;
     const w=Math.max(0, remain/LIMIT*100);
     tbar.style.width=w+'%';
+    const num = Math.max(0, Math.ceil(remain));
+    tcount.textContent = num;
     if(remain<=0){ clearInterval(timerId); timeUp(); }
   }, step);
 }
 function stopTimer(){ clearInterval(timerId); }
+function revealCorrect(q){
+  const buttons = Array.from(document.querySelectorAll('.choice'));
+  buttons.forEach((btn,i)=>{
+    btn.classList.add('dim');
+    if(i===q.answer){ btn.classList.remove('dim'); btn.classList.add('correct'); }
+  });
+}
 function timeUp(){
+  const q=selected[index];
   document.querySelectorAll('.choice').forEach(btn=>btn.disabled=true);
-  document.getElementById('status').textContent='時間切れ…';
+  revealCorrect(q);
+  document.getElementById('status').textContent='時間切れ… 正解は「'+q.choices[q.answer]+'」';
   sfxWrong();
   document.getElementById('next').disabled=false;
 }
@@ -110,8 +126,9 @@ function showQuestion(){
     b.onclick=()=>{
       stopTimer();
       document.querySelectorAll(".choice").forEach(btn=>btn.disabled=true);
+      b.classList.add('clicked');
       if(i===q.answer){ correct++; b.classList.add("correct"); document.getElementById("status").textContent="正解！ "+(q.explain||""); sfxCorrect(); }
-      else{ b.classList.add("wrong"); document.getElementById("status").textContent="不正解… 正解は「"+q.choices[q.answer]+"」。 "+(q.explain||""); sfxWrong(); }
+      else{ b.classList.add("wrong"); document.getElementById("status").textContent="不正解… 正解は「"+q.choices[q.answer]+"」。 "+(q.explain||""); sfxWrong(); revealCorrect(q); }
       document.getElementById("next").disabled=false;
     };
     wrap.appendChild(b);

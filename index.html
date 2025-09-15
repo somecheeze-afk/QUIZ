@@ -6,12 +6,17 @@
   <title>ココイチクイズ</title>
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <link rel="stylesheet" href="style.css" />
+  <style>
+    /* 強制的に白フラッシュを出さない */
+    html, body { background: transparent; }
+  </style>
 </head>
 <body>
   <!-- Splash -->
   <div id="splash">
     <div class="center">
-      <h1 class="grad">🍛 ココイチクイズ</h1>
+      <div class="emoji" aria-hidden="true">🍛</div>
+      <h1 class="grad">ココイチクイズ</h1>
       <p class="muted">楽しみながら覚えよう！</p>
     </div>
   </div>
@@ -32,16 +37,16 @@
   </div>
 
 <script>
-// Auto-hide splash after 3s
+// Auto-hide splash after 3s (opacity fade only, no white)
 window.addEventListener("load",()=>{ setTimeout(hideSplash,3000); });
 function hideSplash(){
   const sp=document.getElementById("splash");
-  sp.classList.add("fadeout"); // opacity only (no white)
+  sp.classList.add("fadeout"); // opacity only
   setTimeout(()=>{
     sp.style.display="none";
     document.getElementById("main").style.display="block";
     loadManifest();
-  },480);
+  },600);
 }
 
 let allData = null;

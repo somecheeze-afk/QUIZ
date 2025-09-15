@@ -8,7 +8,6 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Splash -->
   <div id="splash" aria-hidden="true">
     <div class="center">
       <div class="emoji" aria-hidden="true">🍛</div>
@@ -17,7 +16,7 @@
     </div>
   </div>
 
-  <div class="wrap" id="main">
+  <div class="wrap" id="main" style="opacity:0">
     <section class="card">
       <div class="header-row">
         <h1>クイズを選択</h1>
@@ -27,71 +26,6 @@
     </section>
   </div>
 
-<script>
-// Avoid white flash: show main behind with opacity 0; splash fades out transparently
-document.getElementById("main").style.opacity = "0";
-window.addEventListener("load",()=>{ setTimeout(()=>hideSplash(true), 2000); });
-
-function hideSplash(withFade){
-  const sp=document.getElementById("splash");
-  if(withFade) sp.classList.add("fadeout");
-  setTimeout(()=>{
-    sp.style.display="none";
-    const m=document.getElementById("main");
-    m.style.transition="opacity .45s ease";
-    m.style.opacity="1";
-    loadManifest();
-  }, withFade? 560 : 0);
-}
-
-let allData=null, currentCat="all";
-async function loadManifest(){
-  const res=await fetch("quizzes/manifest.json",{cache:"no-store"});
-  allData=await res.json();
-  buildSegments(); renderList();
-}
-function catsFromData(){
-  const set = new Set(allData.quizzes.map(q=>q.category||"その他"));
-  return ["すべて", ...Array.from(set).sort()];
-}
-function buildSegments(){
-  const holder=document.getElementById("segments"); holder.innerHTML="";
-  catsFromData().forEach((c,idx)=>{
-    const val = c==="すべて" ? "all" : c;
-    const btn=document.createElement("button");
-    btn.className="seg"+(idx===0?" seg-active":"");
-    btn.setAttribute("role","tab"); btn.setAttribute("aria-pressed", idx===0?"true":"false");
-    btn.textContent=c;
-    btn.onclick=()=>{
-      [...holder.children].forEach(b=>{ b.classList.remove("seg-active"); b.setAttribute("aria-pressed","false"); });
-      btn.classList.add("seg-active"); btn.setAttribute("aria-pressed","true");
-      currentCat=val; renderList();
-    };
-    holder.appendChild(btn);
-  });
-}
-function renderList(){
-  const list=document.getElementById("quizList"); list.innerHTML="";
-  allData.quizzes
-    .filter(q=> currentCat==="all" ? true : (q.category||"その他")===currentCat)
-    .forEach(q=>{
-      const wrap=document.createElement("div"); wrap.className="card rise";
-      const cat = q.category ? `<span class="pill">${q.category}</span>` : "";
-      wrap.innerHTML=`<div class="row"><h2>${q.title}</h2>${cat}</div>
-        <p class="muted">${q.count}問 / 更新日: ${q.updated}</p>
-        <div class="sliderrow">
-          <label>出題数</label>
-          <input id="range-${q.id}" class="slider" type="range" min="1" max="${q.count}" value="${q.count}" oninput="document.getElementById('val-${q.id}').textContent=this.value">
-          <span id="val-${q.id}" class="badge">${q.count}</span>
-        </div>
-        <div class="mode-row">
-          <button class="btn ghost" onclick="startQuiz('${q.id}', document.getElementById('range-${q.id}').value, 'normal')">ノーマル</button>
-          <button class="btn primary" onclick="startQuiz('${q.id}', document.getElementById('range-${q.id}').value, 'challenge')">チャレンジ</button>
-        </div>`;
-      list.appendChild(wrap);
-    });
-}
-function startQuiz(id,count,mode){ location.href=\`quiz.html?id=\${id}&count=\${count}&mode=\${mode}\`; }
-</script>
+  <script src="app.js"></script>
 </body>
 </html>

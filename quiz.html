@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>クイズ</title>
+</head>
+<body>
+<h1 id="title"></h1>
+<div id="question"></div>
+<div id="choices"></div>
+<button id="next" disabled>次へ</button>
+<div id="status"></div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const id = params.get("id");
+
+let quiz, index=0, correct=0;
+
+async function loadQuiz(){
+  const res = await fetch(`quizzes/${id}.json`);
+  quiz = await res.json();
+  document.getElementById("title").textContent = quiz.title;
+  showQuestion();
+}
+
+function showQuestion(){
+  const q = quiz.questions[index];
+  document.getElementById("question").textContent = q.q;
+  const choicesDiv = document.getElementById("choices");
+  choicesDiv.innerHTML = "";
+  q.choices.forEach((c,i)=>{
+    const btn = document.createElement("button");
+    btn.textContent = c;
+    btn.onclick = ()=>{
+      if(i===q.answer){
+        correct++;
+        document.getElementById("status").textContent="正解！";
+      }else{
+        document.getElementById("status").textContent="不正解… 正解は「"+q.choices[q.answer]+"」";
+      }
+      document.getElementById("next").disabled=false;
+    };
+    choicesDiv.appendChild(btn);
+  });
+}
+
+document.getElementById("next").onclick=()=>{
+  index++;
+  document.getElementById("next").disabled=true;
+  if(index<quiz.questions.length){
+    showQuestion();
+  }else{
+    document.getElementById("question").textContent="終了！ 正解数："+correct+"/"+quiz.questions.length;
+    document.getElementById("choices").innerHTML="";
+  }
+};
+
+loadQuiz();
+</script>
+</body>
+</html>

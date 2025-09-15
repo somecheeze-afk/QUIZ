@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>クイズ一覧</title>
+</head>
+<body>
+<h1>クイズ一覧</h1>
+<ul id="list"></ul>
+
+<script>
+async function loadManifest(){
+  const res = await fetch("quizzes/manifest.json");
+  const data = await res.json();
+  const list = document.getElementById("list");
+  data.quizzes.forEach(q=>{
+    const li = document.createElement("li");
+    li.innerHTML = `<a href="quiz.html?id=${q.id}">${q.title} (${q.count}問)</a>`;
+    list.appendChild(li);
+  });
+}
+loadManifest();
+</script>
+</body>
+</html>

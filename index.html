@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ココイチクイズ</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Splash -->
+  <div id="splash">
+    <div style="text-align:center">
+      <h1 style="background:linear-gradient(90deg,#fde68a,#f59e0b,#f97316);
+        -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">
+        🍛 ココイチクイズ
+      </h1>
+      <p class="muted">楽しみながら覚えよう！</p>
+      <button onclick="hideSplash()" class="btn primary">はじめる ▶</button>
+    </div>
+  </div>
+
+  <div class="wrap" id="main" style="display:none">
+    <section class="card">
+      <h1>クイズを選択してください</h1>
+      <div id="quizList" class="choices"></div>
+    </section>
+  </div>
+
+<script>
+function hideSplash(){
+  document.getElementById("splash").style.display="none";
+  document.getElementById("main").style.display="block";
+  loadManifest();
+}
+async function loadManifest(){
+  const res = await fetch("quizzes/manifest.json", {cache:"no-store"});
+  const data = await res.json();
+  const list = document.getElementById("quizList");
+  list.innerHTML="";
+  data.quizzes.forEach(q=>{
+    const wrap=document.createElement("div");
+    wrap.className="card";
+    wrap.style.marginBottom="12px";
+    wrap.innerHTML=`<h2>${q.title}</h2>
+      <p class="muted">${q.count}問 / 更新日: ${q.updated}</p>
+      <label>出題数: <input type="range" min="1" max="${q.count}" value="${q.count}" oninput="this.nextElementSibling.textContent=this.value"></label>
+      <span>${q.count}</span>
+      <div style="margin-top:12px">
+        <a class="btn primary" href="#" onclick="startQuiz('${q.id}', this.previousElementSibling.previousElementSibling.value)">挑戦する ▶</a>
+      </div>`;
+    list.appendChild(wrap);
+  });
+}
+function startQuiz(id,count){
+  location.href=`quiz.html?id=${id}&count=${count}`;
+}
+</script>
+</body>
+</html>

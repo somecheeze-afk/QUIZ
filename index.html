@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ココイチクイズ</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -23,9 +24,7 @@
   </div>
 
 <script>
-window.addEventListener("load",()=>{
-  setTimeout(hideSplash,3000);
-});
+window.addEventListener("load",()=>{ setTimeout(hideSplash,3000); });
 function hideSplash(){
   const sp=document.getElementById("splash");
   sp.classList.add("fadeout");
@@ -33,7 +32,7 @@ function hideSplash(){
     sp.style.display="none";
     document.getElementById("main").style.display="block";
     loadManifest();
-  },500);
+  },480);
 }
 async function loadManifest(){
   const res=await fetch("quizzes/manifest.json",{cache:"no-store"});
@@ -56,9 +55,7 @@ async function loadManifest(){
     list.appendChild(wrap);
   });
 }
-function startQuiz(id,count){
-  location.href=`quiz.html?id=${id}&count=${count}`;
-}
+function startQuiz(id,count){ location.href=`quiz.html?id=${id}&count=${count}`; }
 </script>
 </body>
 </html>

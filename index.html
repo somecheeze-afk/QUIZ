@@ -10,7 +10,7 @@
 <body>
   <!-- Splash -->
   <div id="splash">
-    <div style="text-align:center; animation: floatIn .6s ease">
+    <div class="center">
       <h1 class="grad">🍛 ココイチクイズ</h1>
       <p class="muted">楽しみながら覚えよう！</p>
     </div>
@@ -18,42 +18,67 @@
 
   <div class="wrap" id="main" style="display:none">
     <section class="card">
-      <h1>クイズを選択してください</h1>
+      <div class="header-row">
+        <h1>クイズを選択してください</h1>
+        <div class="filter">
+          <label for="cat">ジャンル</label>
+          <select id="cat">
+            <option value="all">すべて</option>
+          </select>
+        </div>
+      </div>
       <div id="quizList" class="choices"></div>
     </section>
   </div>
 
 <script>
+// Auto-hide splash after 3s
 window.addEventListener("load",()=>{ setTimeout(hideSplash,3000); });
 function hideSplash(){
   const sp=document.getElementById("splash");
-  sp.classList.add("fadeout");
+  sp.classList.add("fadeout"); // opacity only (no white)
   setTimeout(()=>{
     sp.style.display="none";
     document.getElementById("main").style.display="block";
     loadManifest();
   },480);
 }
+
+let allData = null;
 async function loadManifest(){
   const res=await fetch("quizzes/manifest.json",{cache:"no-store"});
-  const data=await res.json();
+  allData = await res.json();
+  // build category options
+  const set = new Set(allData.quizzes.map(q=>q.category||"その他"));
+  const sel = document.getElementById("cat");
+  [...set].sort().forEach(c=>{
+    const opt=document.createElement("option"); opt.value=c; opt.textContent=c; sel.appendChild(opt);
+  });
+  sel.onchange=()=>renderList();
+  renderList();
+}
+function renderList(){
+  const selVal = document.getElementById("cat").value;
   const list=document.getElementById("quizList");
   list.innerHTML="";
-  data.quizzes.forEach(q=>{
-    const wrap=document.createElement("div");
-    wrap.className="card rise";
-    wrap.innerHTML=`<h2>${q.title}</h2>
-      <p class="muted">${q.count}問 / 更新日: ${q.updated}</p>
-      <div class="sliderrow">
-        <label>出題数</label>
-        <input id="range-${q.id}" class="slider" type="range" min="1" max="${q.count}" value="${q.count}" oninput="document.getElementById('val-${q.id}').textContent=this.value">
-        <span id="val-${q.id}" class="badge">${q.count}</span>
-      </div>
-      <div style="margin-top:12px">
-        <a class="btn primary" href="#" onclick="startQuiz('${q.id}', document.getElementById('range-${q.id}').value)">挑戦する ▶</a>
-      </div>`;
-    list.appendChild(wrap);
-  });
+  allData.quizzes
+    .filter(q=> selVal==="all" ? true : (q.category||"その他")===selVal)
+    .forEach(q=>{
+      const wrap=document.createElement("div");
+      wrap.className="card rise";
+      const cat = q.category ? `<span class="pill">${q.category}</span>` : "";
+      wrap.innerHTML=`<div class="row"><h2>${q.title}</h2>${cat}</div>
+        <p class="muted">${q.count}問 / 更新日: ${q.updated}</p>
+        <div class="sliderrow">
+          <label>出題数</label>
+          <input id="range-${q.id}" class="slider" type="range" min="1" max="${q.count}" value="${q.count}" oninput="document.getElementById('val-${q.id}').textContent=this.value">
+          <span id="val-${q.id}" class="badge">${q.count}</span>
+        </div>
+        <div style="margin-top:12px">
+          <a class="btn primary" href="#" onclick="startQuiz('${q.id}', document.getElementById('range-${q.id}').value)">挑戦する ▶</a>
+        </div>`;
+      list.appendChild(wrap);
+    });
 }
 function startQuiz(id,count){ location.href=`quiz.html?id=${id}&count=${count}`; }
 </script>

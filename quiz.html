@@ -8,15 +8,18 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <canvas id="fx" style="position:fixed;inset:0;pointer-events:none;z-index:5;display:none"></canvas>
   <div class="wrap">
     <section class="card rise">
       <div class="progress"><div id="bar" class="bar"></div></div>
+      <div class="timer"><div id="tbar" class="timerbar"></div></div>
       <h2 id="question"></h2>
       <div id="choices" class="choices"></div>
-      <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center">
+      <div class="end-actions">
+        <a id="back" href="index.html" class="btn" style="display:none">トップに戻る</a>
         <button id="next" class="btn" disabled>次へ ▶</button>
-        <span id="status" class="muted"></span>
       </div>
+      <span id="status" class="muted"></span>
     </section>
   </div>
 
@@ -27,8 +30,7 @@ function ensureCtx(){ if(!audioCtx){ audioCtx = new (window.AudioContext||window
 function beep(freq, dur=0.14, type="sine", vol=0.08, when=0){
   ensureCtx(); const t=audioCtx.currentTime+when;
   const o=audioCtx.createOscillator(); const g=audioCtx.createGain();
-  o.type=type; o.frequency.setValueAtTime(freq,t);
-  o.connect(g); g.connect(audioCtx.destination);
+  o.type=type; o.frequency.setValueAtTime(freq,t); o.connect(g); g.connect(audioCtx.destination);
   g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
   o.start(t); o.stop(t+dur+0.02);
 }
@@ -39,12 +41,36 @@ function sfxWrong(){ ensureCtx(); const t=audioCtx.currentTime; const o=audioCtx
   g.gain.setValueAtTime(0.001,t); g.gain.linearRampToValueAtTime(0.07,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.36);
   o.start(t); o.stop(t+0.38);
 }
+// ====== Fireworks (simple) ======
+const canvas = document.getElementById('fx'); const ctx = canvas.getContext('2d');
+function resize(){ canvas.width = innerWidth; canvas.height = innerHeight; } window.addEventListener('resize', resize);
+function fireworks(duration=2500){
+  resize(); canvas.style.display='block';
+  const particles=[]; const colors=['#fde047','#fb923c','#60a5fa','#34d399','#f472b6'];
+  const start=performance.now();
+  function burst(x,y){
+    for(let i=0;i<80;i++){
+      const a=Math.random()*Math.PI*2, v= (Math.random()*2+1);
+      particles.push({x,y, vx:Math.cos(a)*v, vy:Math.sin(a)*v, life:1, color:colors[(Math.random()*colors.length)|0]});
+    }
+  }
+  const timer=setInterval(()=>burst(Math.random()*canvas.width, Math.random()*canvas.height*0.6+canvas.height*0.1), 350);
+  function tick(t){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for(const p of particles){
+      p.x+=p.vx; p.y+=p.vy; p.vy+=0.02; p.life*=0.98;
+      ctx.globalAlpha=p.life; ctx.fillStyle=p.color; ctx.fillRect(p.x,p.y,2,2);
+    }
+    if(t-start<duration){ requestAnimationFrame(tick); }
+    else{ clearInterval(timer); canvas.style.display='none'; }
+  }
+  requestAnimationFrame(tick);
+}
 
 // ====== Quiz ======
 const params=new URLSearchParams(location.search);
-const id=params.get("id");
-const count=parseInt(params.get("count")||"0");
-let quiz,index=0,correct=0,selected=[];
+const id=params.get("id"); const count=parseInt(params.get("count")||"0");
+let quiz,index=0,correct=0,selected=[]; let timerId=null; const LIMIT=5; // 秒
 
 async function loadQuiz(){
   const res=await fetch(`quizzes/${id}.json`,{cache:"no-store"});
@@ -53,35 +79,60 @@ async function loadQuiz(){
   selected=quiz.questions.slice().sort(()=>Math.random()-0.5).slice(0,count||quiz.questions.length);
   showQuestion();
 }
+function startTimer(){
+  const tbar=document.getElementById('tbar');
+  let remain=LIMIT, step=100; // ms
+  tbar.style.transition='none'; tbar.style.width='100%'; void tbar.offsetWidth; // reset
+  tbar.style.transition='width .1s linear';
+  clearInterval(timerId);
+  timerId=setInterval(()=>{
+    remain-=step/1000;
+    const w=Math.max(0, remain/LIMIT*100);
+    tbar.style.width=w+'%';
+    if(remain<=0){ clearInterval(timerId); timeUp(); }
+  }, step);
+}
+function stopTimer(){ clearInterval(timerId); }
+function timeUp(){
+  document.querySelectorAll('.choice').forEach(btn=>btn.disabled=true);
+  document.getElementById('status').textContent='時間切れ…';
+  sfxWrong();
+  document.getElementById('next').disabled=false;
+}
 function showQuestion(){
   const q=selected[index];
+  document.getElementById('status').textContent='';
   document.getElementById("question").textContent=q.q;
-  const wrap=document.getElementById("choices");
-  wrap.innerHTML="";
+  const wrap=document.getElementById("choices"); wrap.innerHTML="";
   q.choices.forEach((c,i)=>{
     const b=document.createElement("button");
     b.className="choice rise"; b.textContent=c;
     b.onclick=()=>{
+      stopTimer();
       document.querySelectorAll(".choice").forEach(btn=>btn.disabled=true);
-      if(i===q.answer){
-        correct++; b.classList.add("correct"); document.getElementById("status").textContent="正解！ "+(q.explain||""); sfxCorrect();
-      }else{
-        b.classList.add("wrong"); document.getElementById("status").textContent="不正解… 正解は「"+q.choices[q.answer]+"」。 "+(q.explain||""); sfxWrong();
-      }
+      if(i===q.answer){ correct++; b.classList.add("correct"); document.getElementById("status").textContent="正解！ "+(q.explain||""); sfxCorrect(); }
+      else{ b.classList.add("wrong"); document.getElementById("status").textContent="不正解… 正解は「"+q.choices[q.answer]+"」。 "+(q.explain||""); sfxWrong(); }
       document.getElementById("next").disabled=false;
     };
     wrap.appendChild(b);
   });
   document.getElementById("bar").style.width=`${(index/selected.length)*100}%`;
+  document.getElementById('next').disabled=true;
+  startTimer();
 }
 document.getElementById("next").onclick=()=>{
-  index++; document.getElementById("status").textContent="";
-  document.getElementById("next").disabled=true;
+  index++; 
   if(index<selected.length){ showQuestion(); }
   else{
+    stopTimer();
     document.getElementById("bar").style.width="100%";
-    document.getElementById("question").textContent=`終了！ 正解数：${correct}/${selected.length}`;
+    const total=selected.length;
+    document.getElementById("question").textContent=`終了！ 正解数：${correct}/${total}`;
     document.getElementById("choices").innerHTML="";
+    document.getElementById("status").textContent="";
+    document.getElementById("next").style.display="none";
+    document.getElementById("back").style.display="inline-block";
+    if(correct===total){ fireworks(); }
   }
 };
 loadQuiz();

@@ -83,11 +83,10 @@ async function loadQuiz(){
   showQuestion();
 }
 function startTimer(){
-  const tbar=document.getElementById('tbar');
-  const tcount=document.getElementById('tcount');
-  let remain=LIMIT, step=100; // ms
+  const tbar=document.getElementById('tbar'); const tcount=document.getElementById('tcount');
+  let remain=LIMIT, step=100;
   tcount.textContent = Math.ceil(remain);
-  tbar.style.transition='none'; tbar.style.width='100%'; void tbar.offsetWidth; // reset
+  tbar.style.transition='none'; tbar.style.width='100%'; void tbar.offsetWidth;
   tbar.style.transition='width .1s linear';
   clearInterval(timerId);
   timerId=setInterval(()=>{
@@ -95,7 +94,10 @@ function startTimer(){
     const w=Math.max(0, remain/LIMIT*100);
     tbar.style.width=w+'%';
     const num = Math.max(0, Math.ceil(remain));
-    tcount.textContent = num;
+    if(tcount.textContent != String(num)){
+      tcount.textContent = num;
+      tcount.classList.remove('pulse'); void tcount.offsetWidth; tcount.classList.add('pulse');
+    }
     if(remain<=0){ clearInterval(timerId); timeUp(); }
   }, step);
 }
@@ -148,7 +150,7 @@ document.getElementById("next").onclick=()=>{
     document.getElementById("choices").innerHTML="";
     document.getElementById("status").textContent="";
     document.getElementById("next").style.display="none";
-    document.getElementById("back").style.display="inline-block";
+    document.getElementById("back").style.display="inline-flex";
     if(correct===total){ fireworks(); }
   }
 };

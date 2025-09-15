@@ -6,14 +6,10 @@
   <title>ココイチクイズ</title>
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <link rel="stylesheet" href="style.css" />
-  <style>
-    /* 強制的に白フラッシュを出さない */
-    html, body { background: transparent; }
-  </style>
 </head>
 <body>
-  <!-- Splash -->
-  <div id="splash">
+  <!-- Splash (overlay only opacity fade) -->
+  <div id="splash" aria-hidden="true">
     <div class="center">
       <div class="emoji" aria-hidden="true">🍛</div>
       <h1 class="grad">ココイチクイズ</h1>
@@ -21,56 +17,65 @@
     </div>
   </div>
 
-  <div class="wrap" id="main" style="display:none">
+  <div class="wrap" id="main">
     <section class="card">
       <div class="header-row">
-        <h1>クイズを選択してください</h1>
-        <div class="filter">
-          <label for="cat">ジャンル</label>
-          <select id="cat">
-            <option value="all">すべて</option>
-          </select>
-        </div>
+        <h1>クイズを選択</h1>
+        <div id="segments" class="segments" role="tablist" aria-label="ジャンル"></div>
       </div>
       <div id="quizList" class="choices"></div>
     </section>
   </div>
 
 <script>
-// Auto-hide splash after 3s (opacity fade only, no white)
-window.addEventListener("load",()=>{ setTimeout(hideSplash,3000); });
-function hideSplash(){
+// Avoid white flash: show main behind with opacity 0; splash fades out transparently
+document.getElementById("main").style.opacity = "0";
+window.addEventListener("load",()=>{ setTimeout(()=>hideSplash(true), 3000); });
+
+function hideSplash(withFade){
   const sp=document.getElementById("splash");
-  sp.classList.add("fadeout"); // opacity only
+  if(withFade) sp.classList.add("fadeout");
   setTimeout(()=>{
     sp.style.display="none";
-    document.getElementById("main").style.display="block";
+    const m=document.getElementById("main");
+    m.style.transition="opacity .45s ease";
+    m.style.opacity="1";
     loadManifest();
-  },600);
+  }, withFade? 560 : 0);
 }
 
-let allData = null;
+let allData=null, currentCat="all";
 async function loadManifest(){
   const res=await fetch("quizzes/manifest.json",{cache:"no-store"});
-  allData = await res.json();
-  // build category options
+  allData=await res.json();
+  buildSegments(); renderList();
+}
+function catsFromData(){
   const set = new Set(allData.quizzes.map(q=>q.category||"その他"));
-  const sel = document.getElementById("cat");
-  [...set].sort().forEach(c=>{
-    const opt=document.createElement("option"); opt.value=c; opt.textContent=c; sel.appendChild(opt);
+  return ["すべて", ...Array.from(set).sort()];
+}
+function buildSegments(){
+  const holder=document.getElementById("segments"); holder.innerHTML="";
+  catsFromData().forEach((c,idx)=>{
+    const val = c==="すべて" ? "all" : c;
+    const btn=document.createElement("button");
+    btn.className="seg"+(idx===0?" seg-active":"");
+    btn.setAttribute("role","tab"); btn.setAttribute("aria-pressed", idx===0?"true":"false");
+    btn.textContent=c;
+    btn.onclick=()=>{
+      [...holder.children].forEach(b=>{ b.classList.remove("seg-active"); b.setAttribute("aria-pressed","false"); });
+      btn.classList.add("seg-active"); btn.setAttribute("aria-pressed","true");
+      currentCat=val; renderList();
+    };
+    holder.appendChild(btn);
   });
-  sel.onchange=()=>renderList();
-  renderList();
 }
 function renderList(){
-  const selVal = document.getElementById("cat").value;
-  const list=document.getElementById("quizList");
-  list.innerHTML="";
+  const list=document.getElementById("quizList"); list.innerHTML="";
   allData.quizzes
-    .filter(q=> selVal==="all" ? true : (q.category||"その他")===selVal)
+    .filter(q=> currentCat==="all" ? true : (q.category||"その他")===currentCat)
     .forEach(q=>{
-      const wrap=document.createElement("div");
-      wrap.className="card rise";
+      const wrap=document.createElement("div"); wrap.className="card rise";
       const cat = q.category ? `<span class="pill">${q.category}</span>` : "";
       wrap.innerHTML=`<div class="row"><h2>${q.title}</h2>${cat}</div>
         <p class="muted">${q.count}問 / 更新日: ${q.updated}</p>
@@ -79,7 +84,7 @@ function renderList(){
           <input id="range-${q.id}" class="slider" type="range" min="1" max="${q.count}" value="${q.count}" oninput="document.getElementById('val-${q.id}').textContent=this.value">
           <span id="val-${q.id}" class="badge">${q.count}</span>
         </div>
-        <div style="margin-top:12px">
+        <div style="margin-top:12px;display:flex;gap:8px">
           <a class="btn primary" href="#" onclick="startQuiz('${q.id}', document.getElementById('range-${q.id}').value)">挑戦する ▶</a>
         </div>`;
       list.appendChild(wrap);
